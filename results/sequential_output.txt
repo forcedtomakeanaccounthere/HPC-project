@@ -1,0 +1,40 @@
+=== HPC Matrix-Vector Operations Benchmark ===
+Matrix Size: 512 x 512
+Vector Size: 512
+Iterations: 3
+Use blocked multiply: NO
+Fast init: NO
+
+Estimated floating-point ops for matrix multiplies: 8.053e+08
+Initializing data structures (size=512)...
+Data initialization completed.
+Initialization time: 0.023660 seconds
+
+Starting computational pipeline (iterations=3, use_blocked=0)...
+Iteration 1/3
+  Preprocessing time: 0.000000 s
+  Matrix multiplication time: 0.715935 s
+  Matrix-vector time: 0.001060 s
+  Vector operations time: 0.000000 s
+  Postprocessing time: 0.000000 s
+Iteration 2/3
+  Preprocessing time: 0.000000 s
+  Matrix multiplication time: 0.694805 s
+  Matrix-vector time: 0.000805 s
+  Vector operations time: 0.000000 s
+  Postprocessing time: 0.000000 s
+Iteration 3/3
+  Preprocessing time: 0.000000 s
+  Matrix multiplication time: 0.712594 s
+  Matrix-vector time: 0.000000 s
+  Vector operations time: 0.000000 s
+  Postprocessing time: 0.000000 s
+Pipeline total time: 2.134841 s
+
+=== Performance Results ===
+Total computation time: 2.134927 seconds
+Time per iteration: 0.711642 seconds
+Result checksum: 503634.970342
+Estimated Memory usage: ~6.01 MB
+
+Program completed successfully.
