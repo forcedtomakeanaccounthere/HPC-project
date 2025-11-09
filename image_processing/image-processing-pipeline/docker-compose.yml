@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Development environment with LLVM/Clang
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: image-processing:latest
+    container_name: image-processing-dev
+    volumes:
+      - .:/workspace
+      - build-cache:/workspace/build
+    working_dir: /workspace
+    environment:
+      - OMP_NUM_THREADS=4
+      - OMP_PROC_BIND=true
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+  # CI/CD test environment
+  test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: image-processing:latest
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: >
+      bash -c "
+        mkdir -p build &&
+        cd build &&
+        cmake -G Ninja -DBUILD_PARALLEL=ON -DBUILD_TESTS=ON .. &&
+        ninja &&
+        ctest --output-on-failure
+      "
+
+  # Performance benchmark runner
+  benchmark:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: image-processing:latest
+    volumes:
+      - .:/workspace
+      - ./test_data:/test_data
+    working_dir: /workspace
+    environment:
+      - OMP_NUM_THREADS=8
+    command: >
+      bash -c "
+        mkdir -p build &&
+        cd build &&
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_PARALLEL=ON .. &&
+        ninja &&
+        echo 'Running sequential benchmark...' &&
+        time ./bin/sequential_processor /test_data/sample.png seq_bench &&
+        echo 'Running parallel benchmark...' &&
+        time ./bin/parallel_processor /test_data/sample.png par_bench
+      "
+
+volumes:
+  build-cache:
