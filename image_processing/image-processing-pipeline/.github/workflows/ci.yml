@@ -1,0 +1,208 @@
+name: Image Processing CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Build and test with system compiler
+  build-system:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build libomp-dev
+    
+    - name: Create build directory
+      run: mkdir -p build
+    
+    - name: Configure CMake
+      run: |
+        cd build
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_PARALLEL=ON \
+          -DBUILD_TESTS=ON \
+          ..
+    
+    - name: Build
+      run: |
+        cd build
+        ninja -v
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-system
+        path: build/Testing/
+
+  # Build with custom LLVM/Clang
+  build-llvm:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install base dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          wget \
+          libelf-dev \
+          libffi-dev \
+          python3
+    
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v3
+      with:
+        path: /opt/llvm
+        key: llvm-17.0.6-openmp-${{ runner.os }}
+    
+    - name: Build LLVM with OpenMP
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        chmod +x scripts/build_llvm.sh
+        ./scripts/build_llvm.sh all
+      env:
+        INSTALL_PREFIX: /opt/llvm
+        NUM_JOBS: 4
+    
+    - name: Configure with LLVM
+      run: |
+        export PATH="/opt/llvm/bin:$PATH"
+        export LD_LIBRARY_PATH="/opt/llvm/lib:$LD_LIBRARY_PATH"
+        mkdir -p build-llvm
+        cd build-llvm
+        cmake -G Ninja \
+          -DCMAKE_C_COMPILER=/opt/llvm/bin/clang \
+          -DCMAKE_CXX_COMPILER=/opt/llvm/bin/clang++ \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_PARALLEL=ON \
+          -DBUILD_TESTS=ON \
+          ..
+    
+    - name: Build with LLVM
+      run: |
+        cd build-llvm
+        ninja -v
+    
+    - name: Run tests with LLVM
+      run: |
+        export LD_LIBRARY_PATH="/opt/llvm/lib:$LD_LIBRARY_PATH"
+        cd build-llvm
+        ctest --output-on-failure --verbose
+
+  # Docker build test
+  build-docker:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: false
+        tags: image-processing:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Test in container
+      run: |
+        docker run --rm -v $(pwd):/workspace image-processing:latest \
+          bash -c "cd /workspace && \
+                   mkdir -p build && \
+                   cd build && \
+                   cmake -G Ninja -DBUILD_PARALLEL=ON -DBUILD_TESTS=ON .. && \
+                   ninja && \
+                   ctest --output-on-failure"
+
+  # Code quality checks
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format cppcheck
+    
+    - name: Check code formatting
+      run: |
+        find src tests -name "*.c" -o -name "*.h" | \
+          xargs clang-format --dry-run --Werror
+    
+    - name: Run static analysis
+      run: |
+        cppcheck --enable=all --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          src/ tests/
+
+  # Performance benchmarks
+  benchmark:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build libomp-dev
+    
+    - name: Build with optimizations
+      run: |
+        mkdir -p build
+        cd build
+        cmake -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_FLAGS="-O3 -march=native" \
+          -DBUILD_PARALLEL=ON \
+          ..
+        ninja
+    
+    - name: Download test image
+      run: |
+        mkdir -p test_data
+        wget -O test_data/test.png \
+          https://picsum.photos/1920/1080
+    
+    - name: Run performance test
+      run: |
+        cd build/bin
+        time ./sequential_processor ../../test_data/test.png seq_test
+        time ./parallel_processor ../../test_data/test.png par_test
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: |
+          sequential output images/
+          parallel output images/

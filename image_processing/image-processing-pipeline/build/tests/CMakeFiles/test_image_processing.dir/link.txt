@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Wextra -O3 -march=native -DNDEBUG CMakeFiles/test_image_processing.dir/test_image_processing.c.o CMakeFiles/test_image_processing.dir/__/src/sequential_image_processing.c.o -o ../bin/test_image_processing  -lm 

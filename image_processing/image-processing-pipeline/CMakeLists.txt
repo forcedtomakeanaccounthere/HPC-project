@@ -52,9 +52,12 @@ if(BUILD_PARALLEL)
     # GPU offload support
     if(ENABLE_OFFLOAD)
         target_compile_options(parallel_processor PRIVATE
+            # Enable OpenMP offload feature
+            -fopenmp
+            # Specify the target architecture triple
             -fopenmp-targets=nvptx64-nvidia-cuda
-            -Xopenmp-target=nvptx64-nvidia-cuda
-            -march=sm_60
+            # Pass flags specifically to the offload compiler (nvptx64)
+            -Xopenmp-target=nvptx64-nvidia-cuda -march=sm_60
         )
         message(STATUS "GPU offload enabled for NVIDIA CUDA")
     endif()

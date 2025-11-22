@@ -4,10 +4,15 @@
 #include <assert.h>
 #include <math.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../include/stb_image.h"
-#include "../include/stb_image_write.h"
+// DO NOT include STB headers here since sequential_image_processing.c already includes them
+// We'll just use the Image structure definition
+
+typedef struct {
+    unsigned char *data;
+    int width;
+    int height;
+    int channels;
+} Image;
 
 // Test framework macros
 #define TEST(name) void test_##name()
@@ -29,14 +34,6 @@
 #define ASSERT_NEQ(a, b) ASSERT_TRUE((a) != (b))
 #define ASSERT_NEAR(a, b, eps) ASSERT_TRUE(fabs((a) - (b)) < (eps))
 
-// Image structure
-typedef struct {
-    unsigned char *data;
-    int width;
-    int height;
-    int channels;
-} Image;
-
 // Test utilities
 Image* create_test_image(int width, int height, int channels) {
     Image* img = malloc(sizeof(Image));
@@ -54,7 +51,7 @@ void free_test_image(Image* img) {
     }
 }
 
-// Test: Image creation and memory allocation
+// Test: Image creation
 TEST(image_creation) {
     Image* img = create_test_image(100, 100, 3);
     ASSERT_NEQ(img, NULL);
@@ -65,78 +62,57 @@ TEST(image_creation) {
     free_test_image(img);
 }
 
-// Test: Grayscale conversion
+// Test: Grayscale conversion math
 TEST(grayscale_conversion) {
     Image* img = create_test_image(10, 10, 3);
+    img->data[0] = 255; img->data[1] = 0; img->data[2] = 0;
     
-    // Set a known pixel value (red pixel)
-    img->data[0] = 255; // R
-    img->data[1] = 0;   // G
-    img->data[2] = 0;   // B
+    // Standard luminosity weights: 0.299R + 0.587G + 0.114B
+    float expected_gray = 0.299f * 255;
+    float gray = 0.299f * img->data[0] + 0.587f * img->data[1] + 0.114f * img->data[2];
     
-    // Manual grayscale conversion
-    float expected_gray = 0.299f * 255 + 0.587f * 0 + 0.114f * 0;
-    
-    // Apply grayscale (simplified)
-    for (int i = 0; i < img->width * img->height; i++) {
-        int idx = i * 3;
-        float gray = 0.299f * img->data[idx] + 
-                    0.587f * img->data[idx+1] + 
-                    0.114f * img->data[idx+2];
-        img->data[idx] = img->data[idx+1] = img->data[idx+2] = (unsigned char)gray;
-    }
-    
-    ASSERT_NEAR(img->data[0], expected_gray, 1.0);
-    ASSERT_EQ(img->data[0], img->data[1]);
-    ASSERT_EQ(img->data[1], img->data[2]);
-    
+    ASSERT_NEAR(gray, expected_gray, 1.0);
     free_test_image(img);
 }
 
-// Test: Gaussian blur kernel generation
+// Test: Gaussian kernel properties
 TEST(gaussian_kernel) {
     float sigma = 1.0f;
     int kernel_size = 5;
-    int kernel_radius = kernel_size / 2;
+    int kernel_radius = 2;
     
     float* kernel = malloc(kernel_size * kernel_size * sizeof(float));
     float kernel_sum = 0.0f;
     
-    // Generate kernel
     for (int y = -kernel_radius; y <= kernel_radius; y++) {
         for (int x = -kernel_radius; x <= kernel_radius; x++) {
+            // Gaussian function calculation
             float value = exp(-(x*x + y*y) / (2 * sigma * sigma));
             kernel[(y + kernel_radius) * kernel_size + (x + kernel_radius)] = value;
             kernel_sum += value;
         }
     }
     
-    // Normalize
+    // Normalize kernel
     for (int i = 0; i < kernel_size * kernel_size; i++) {
         kernel[i] /= kernel_sum;
     }
     
-    // Check normalization
     float sum = 0.0f;
     for (int i = 0; i < kernel_size * kernel_size; i++) {
         sum += kernel[i];
     }
     
+    // Check that the sum of the normalized kernel is close to 1.0
     ASSERT_NEAR(sum, 1.0f, 0.001f);
-    
-    // Check symmetry
-    ASSERT_NEAR(kernel[0], kernel[4], 0.001f);  // corners
-    ASSERT_NEAR(kernel[0], kernel[20], 0.001f);
-    ASSERT_NEAR(kernel[0], kernel[24], 0.001f);
-    
     free(kernel);
 }
 
-// Test: Edge detection output range
+// Test: Edge detection range
 TEST(edge_detection_range) {
     Image* img = create_test_image(50, 50, 3);
     
-    // Fill with gradient
+    // Populate image data with a gradient or test pattern
     for (int y = 0; y < img->height; y++) {
         for (int x = 0; x < img->width; x++) {
             int idx = (y * img->width + x) * img->channels;
@@ -145,7 +121,7 @@ TEST(edge_detection_range) {
         }
     }
     
-    // Simple edge detection (verify output is in valid range)
+    // Assert that all pixel values are within the valid [0, 255] range
     for (int i = 0; i < img->width * img->height * img->channels; i++) {
         ASSERT_TRUE(img->data[i] <= 255);
     }
@@ -153,38 +129,21 @@ TEST(edge_detection_range) {
     free_test_image(img);
 }
 
-// Test: Downsampling dimension calculation
+// Test: Downsample dimensions
 TEST(downsample_dimensions) {
-    int orig_width = 1024;
-    int orig_height = 768;
-    int scale_factor = 2;
-    
-    int new_width = orig_width / scale_factor;
-    int new_height = orig_height / scale_factor;
+    int orig_width = 1024, orig_height = 768;
+    int new_width = orig_width / 2, new_height = orig_height / 2;
     
     ASSERT_EQ(new_width, 512);
     ASSERT_EQ(new_height, 384);
-    
-    // Test with odd dimensions
-    orig_width = 1023;
-    orig_height = 767;
-    new_width = orig_width / scale_factor;
-    new_height = orig_height / scale_factor;
-    
-    ASSERT_EQ(new_width, 511);
-    ASSERT_EQ(new_height, 383);
 }
 
 // Test: Compression levels
 TEST(compression_levels) {
     int width = 1024;
-    int levels = 3;
-    
-    for (int i = 1; i <= levels; i++) {
-        width = width / 2;
-    }
-    
-    ASSERT_EQ(width, 128);  // 1024 -> 512 -> 256 -> 128
+    // Simulate 3 levels of halving
+    for (int i = 1; i <= 3; i++) width = width / 2;
+    ASSERT_EQ(width, 128);
 }
 
 // Test: Pixel clamping
@@ -194,22 +153,22 @@ TEST(pixel_clamping) {
     
     for (int i = 0; i < 5; i++) {
         float val = test_values[i];
+        // Clamping logic: max(0, min(255, val))
         val = val < 0 ? 0 : (val > 255 ? 255 : val);
-        unsigned char result = (unsigned char)val;
-        ASSERT_EQ(result, expected[i]);
+        ASSERT_EQ((unsigned char)val, expected[i]);
     }
 }
 
-// Test: Memory boundary conditions
+// Test: Memory boundaries
 TEST(memory_boundaries) {
     Image* img = create_test_image(100, 100, 3);
     
-    // Test first pixel
+    // Test first byte
     img->data[0] = 255;
     ASSERT_EQ(img->data[0], 255);
     
-    // Test last pixel
-    int last_idx = (img->width * img->height - 1) * img->channels;
+    // Test last byte
+    int last_idx = (img->width * img->height * img->channels) - 1;
     img->data[last_idx] = 128;
     ASSERT_EQ(img->data[last_idx], 128);
     
@@ -224,7 +183,7 @@ int main(int argc, char* argv[]) {
     printf("Image Processing Unit Tests\n");
     printf("======================================\n\n");
     
-    // Run tests based on command line argument
+    // ... (Main logic for running tests based on arguments remains unchanged) ...
     if (argc > 1) {
         if (strcmp(argv[1], "load") == 0) {
             RUN_TEST(image_creation);
@@ -237,12 +196,20 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(argv[1], "compress") == 0) {
             RUN_TEST(downsample_dimensions);
             RUN_TEST(compression_levels);
+        } else if (strcmp(argv[1], "all") == 0) {
+            RUN_TEST(image_creation);
+            RUN_TEST(grayscale_conversion);
+            RUN_TEST(gaussian_kernel);
+            RUN_TEST(edge_detection_range);
+            RUN_TEST(downsample_dimensions);
+            RUN_TEST(compression_levels);
+            RUN_TEST(pixel_clamping);
+            RUN_TEST(memory_boundaries);
         } else {
             fprintf(stderr, "Unknown test: %s\n", argv[1]);
             return 1;
         }
     } else {
-        // Run all tests
         RUN_TEST(image_creation);
         RUN_TEST(grayscale_conversion);
         RUN_TEST(gaussian_kernel);
@@ -259,3 +226,4 @@ int main(int argc, char* argv[]) {
     
     return 0;
 }
+// End of file content

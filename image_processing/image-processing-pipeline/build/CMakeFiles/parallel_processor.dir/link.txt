@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Wextra -O3 -march=native -DNDEBUG CMakeFiles/parallel_processor.dir/src/parallel_image_processing.c.o -o bin/parallel_processor  -lm /usr/lib/gcc/x86_64-linux-gnu/11/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a 

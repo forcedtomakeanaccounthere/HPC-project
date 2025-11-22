@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Wextra -O3 -march=native -DNDEBUG CMakeFiles/sequential_processor.dir/src/sequential_image_processing.c.o -o bin/sequential_processor  -lm 
