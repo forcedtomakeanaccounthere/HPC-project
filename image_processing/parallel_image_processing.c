@@ -48,18 +48,17 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Get number of threads from user
+    // user input for thread no.
     int num_threads;
     printf("Enter the number of threads to use (1-%d): ", omp_get_max_threads());
     scanf("%d", &num_threads);
     
-    // Validate thread count
     if (num_threads < 1 || num_threads > omp_get_max_threads()) {
         printf("Invalid number of threads. Using default: %d\n", omp_get_max_threads());
         num_threads = omp_get_max_threads();
     }
 
-    // Set number of threads
+    // set number of threads
     omp_set_num_threads(num_threads);
 
     const char* input_filename = argv[1];

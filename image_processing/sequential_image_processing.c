@@ -35,7 +35,7 @@ void apply_sharpening_filter(Image* img);
 void add_gaussian_noise(Image* img, float noise_level);
 void apply_edge_detection(Image* img);
 
-// NEW: Multi-level image compression functions
+// Multi-level image compression functions
 void apply_gaussian_prefilter(Image* img, float sigma);
 Image* downsample_image(Image* img, int scale_factor);
 void compress_image_multilevel(Image* img, const char* output_prefix, int levels);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
     const char* input_filename = argv[1];
     const char* output_prefix = argv[2];
     
-    // Create output directory
+    // output directory
     #ifdef _WIN32
         system("mkdir \"sequential output images\" 2>nul");
     #else
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
     snprintf(output_filename, sizeof(output_filename), "sequential output images/%s_edges.png", output_prefix);
     save_image(output_filename, edge_img);
     
-    // 6. NEW: Multi-level Image Compression (MAJOR HOTSPOT)
+    // 6. Multi-level Image Compression (MAJOR HOTSPOT)
     Image* compress_img = create_image(original->width, original->height, original->channels);
     memcpy(compress_img->data, original->data, 
            original->width * original->height * original->channels);
