@@ -1,5 +1,11 @@
+
 *.log
 backend/node_modules/
 frontend/node_modules/
+processed/
+uploads/
+parallel output images/
+sequential output images/
+hybrid output images/
 dist/
 .env
