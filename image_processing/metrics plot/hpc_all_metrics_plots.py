@@ -8,9 +8,6 @@ import matplotlib.pyplot as plt
 OUTPUT_DIR = "output images"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-methods = ["Sequential", "Parallel", "Hybrid"]
-x = np.arange(len(methods))
-
 # ==========================
 # Raw timing data (seconds)
 # ==========================
@@ -74,90 +71,118 @@ granularity_data_time = {
     "Fine":   (T_seq_fine,   T_par_fine_8,   T_hyb_fine_8,   PIX_FINE),
 }
 
-colors_threads    = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]  # for 3,6,8,12,15
-colors_processors = ["#1f77b4", "#ff7f0e", "#2ca02c"]  # for 2,5,9
-colors_gran       = ["#1f77b4", "#ff7f0e", "#2ca02c"]  # Small, Medium, Fine
+# Colors for lines (Sequential, Parallel, Hybrid)
+COLOR_SEQ = "#1f77b4"
+COLOR_PAR = "#ff7f0e"
+COLOR_HYB = "#2ca02c"
 
 # ============================================================
-# Helper: plot one metric for threads (medium image)
+# Helper: plot one metric vs THREADS (medium image)
+# X-axis: threads, Lines: Seq / Par / Hybrid
 # ============================================================
 def plot_metric_threads(metric_name, filename, y_label):
-    plt.figure(figsize=(7, 5))
+    threads_list = [3, 6, 8, 12, 15]
+    x = np.array(threads_list, dtype=float)
 
-    for idx, threads in enumerate([3, 6, 8, 12, 15]):
-        # Execution times
+    seq_vals = []
+    par_vals = []
+    hyb_vals = []
+
+    for threads in threads_list:
         seq_t = T_seq_medium
         par_t = par_medium_by_threads[threads]
         hyb_t = hyb_medium_by_threads[threads]
 
         if metric_name == "time":
-            y_vals = [seq_t, par_t, hyb_t]
+            seq_vals.append(seq_t)
+            par_vals.append(par_t)
+            hyb_vals.append(hyb_t)
 
         elif metric_name == "speedup":
             S_seq = 1.0
             S_par = T_seq_medium / par_t
             S_hyb = T_seq_medium / hyb_t
-            y_vals = [S_seq, S_par, S_hyb]
+            seq_vals.append(S_seq)
+            par_vals.append(S_par)
+            hyb_vals.append(S_hyb)
 
         elif metric_name == "efficiency":
             p = threads
             S_seq = 1.0
             S_par = T_seq_medium / par_t
             S_hyb = T_seq_medium / hyb_t
-            E_seq = S_seq / p     # conceptual
+            E_seq = S_seq / p
             E_par = S_par / p
             E_hyb = S_hyb / p
-            y_vals = [E_seq, E_par, E_hyb]
+            seq_vals.append(E_seq)
+            par_vals.append(E_par)
+            hyb_vals.append(E_hyb)
 
         elif metric_name == "cost":
             p = threads
-            C_seq = 1 * seq_t         # 1 processor for sequential
+            C_seq = 1 * seq_t
             C_par = p * par_t
             C_hyb = p * hyb_t
-            y_vals = [C_seq, C_par, C_hyb]
+            seq_vals.append(C_seq)
+            par_vals.append(C_par)
+            hyb_vals.append(C_hyb)
 
         elif metric_name == "throughput":
-            # Mpixels/sec
             Th_seq = PIX_MED / (seq_t * 1e6)
             Th_par = PIX_MED / (par_t * 1e6)
             Th_hyb = PIX_MED / (hyb_t * 1e6)
-            y_vals = [Th_seq, Th_par, Th_hyb]
+            seq_vals.append(Th_seq)
+            par_vals.append(Th_par)
+            hyb_vals.append(Th_hyb)
 
         else:
             raise ValueError("Unknown metric")
 
-        plt.plot(x, y_vals, marker="o", linewidth=2,
-                 color=colors_threads[idx], label=f"{threads} threads")
+    plt.figure(figsize=(7, 5))
+    plt.plot(x, seq_vals, marker="o", linewidth=2, color=COLOR_SEQ, label="Sequential")
+    plt.plot(x, par_vals, marker="o", linewidth=2, color=COLOR_PAR, label="Parallel")
+    plt.plot(x, hyb_vals, marker="o", linewidth=2, color=COLOR_HYB, label="Hybrid")
 
-    plt.xticks(x, methods, fontsize=11)
+    plt.xlabel("Number of Threads", fontsize=12)
     plt.ylabel(y_label, fontsize=12)
-    plt.title(f"{metric_name.capitalize()} vs Method\n(Medium image, varying threads)", fontsize=13)
-    plt.grid(True, axis="y", linestyle="--", alpha=0.6)
-    plt.legend(fontsize=9)
+    plt.title(f"{metric_name.capitalize()} vs Number of Threads\n(Medium image)", fontsize=13)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.xticks(threads_list, [str(t) for t in threads_list])
+    plt.legend(fontsize=10)
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, filename))
     plt.show()
 
 
 # ============================================================
-# Helper: plot one metric for processors (fine image)
+# Helper: plot one metric vs PROCESSORS (fine image)
+# X-axis: processors, Lines: Seq / Par / Hybrid
 # ============================================================
 def plot_metric_processors(metric_name, filename, y_label):
-    plt.figure(figsize=(7, 5))
+    procs_list = [2, 5, 9]
+    x = np.array(procs_list, dtype=float)
 
-    for idx, procs in enumerate([2, 5, 9]):
+    seq_vals = []
+    par_vals = []
+    hyb_vals = []
+
+    for procs in procs_list:
         seq_t = T_seq_fine
         par_t = par_fine_by_procs[procs]
         hyb_t = hyb_fine_by_procs[procs]
 
         if metric_name == "time":
-            y_vals = [seq_t, par_t, hyb_t]
+            seq_vals.append(seq_t)
+            par_vals.append(par_t)
+            hyb_vals.append(hyb_t)
 
         elif metric_name == "speedup":
             S_seq = 1.0
             S_par = T_seq_fine / par_t
             S_hyb = T_seq_fine / hyb_t
-            y_vals = [S_seq, S_par, S_hyb]
+            seq_vals.append(S_seq)
+            par_vals.append(S_par)
+            hyb_vals.append(S_hyb)
 
         elif metric_name == "efficiency":
             p = procs
@@ -167,52 +192,73 @@ def plot_metric_processors(metric_name, filename, y_label):
             E_seq = S_seq / p
             E_par = S_par / p
             E_hyb = S_hyb / p
-            y_vals = [E_seq, E_par, E_hyb]
+            seq_vals.append(E_seq)
+            par_vals.append(E_par)
+            hyb_vals.append(E_hyb)
 
         elif metric_name == "cost":
             p = procs
             C_seq = 1 * seq_t
             C_par = p * par_t
             C_hyb = p * hyb_t
-            y_vals = [C_seq, C_par, C_hyb]
+            seq_vals.append(C_seq)
+            par_vals.append(C_par)
+            hyb_vals.append(C_hyb)
 
         elif metric_name == "throughput":
             Th_seq = PIX_FINE / (seq_t * 1e6)
             Th_par = PIX_FINE / (par_t * 1e6)
             Th_hyb = PIX_FINE / (hyb_t * 1e6)
-            y_vals = [Th_seq, Th_par, Th_hyb]
+            seq_vals.append(Th_seq)
+            par_vals.append(Th_par)
+            hyb_vals.append(Th_hyb)
 
         else:
             raise ValueError("Unknown metric")
 
-        plt.plot(x, y_vals, marker="o", linewidth=2,
-                 color=colors_processors[idx], label=f"{procs} processors")
+    plt.figure(figsize=(7, 5))
+    plt.plot(x, seq_vals, marker="o", linewidth=2, color=COLOR_SEQ, label="Sequential")
+    plt.plot(x, par_vals, marker="o", linewidth=2, color=COLOR_PAR, label="Parallel")
+    plt.plot(x, hyb_vals, marker="o", linewidth=2, color=COLOR_HYB, label="Hybrid")
 
-    plt.xticks(x, methods, fontsize=11)
+    plt.xlabel("Number of Processors", fontsize=12)
     plt.ylabel(y_label, fontsize=12)
-    plt.title(f"{metric_name.capitalize()} vs Method\n(Fine image, varying processors)", fontsize=13)
-    plt.grid(True, axis="y", linestyle="--", alpha=0.6)
-    plt.legend(fontsize=9)
+    plt.title(f"{metric_name.capitalize()} vs Number of Processors\n(Fine image)", fontsize=13)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.xticks(procs_list, [str(p) for p in procs_list])
+    plt.legend(fontsize=10)
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, filename))
     plt.show()
 
 
 # ============================================================
-# Helper: plot one metric for granularity (small/medium/fine, 8 threads)
+# Helper: plot one metric vs GRANULARITY (small/medium/fine, 8 threads)
+# X-axis: granularity, Lines: Seq / Par / Hybrid
 # ============================================================
 def plot_metric_granularity(metric_name, filename, y_label):
-    plt.figure(figsize=(7, 5))
+    gran_labels = list(granularity_data_time.keys())  # ["Small","Medium","Fine"]
+    x = np.arange(len(gran_labels))
 
-    for idx, (label, (seq_t, par_t, hyb_t, pix)) in enumerate(granularity_data_time.items()):
+    seq_vals = []
+    par_vals = []
+    hyb_vals = []
+
+    for label in gran_labels:
+        seq_t, par_t, hyb_t, pix = granularity_data_time[label]
+
         if metric_name == "time":
-            y_vals = [seq_t, par_t, hyb_t]
+            seq_vals.append(seq_t)
+            par_vals.append(par_t)
+            hyb_vals.append(hyb_t)
 
         elif metric_name == "speedup":
             S_seq = 1.0
             S_par = seq_t / par_t
             S_hyb = seq_t / hyb_t
-            y_vals = [S_seq, S_par, S_hyb]
+            seq_vals.append(S_seq)
+            par_vals.append(S_par)
+            hyb_vals.append(S_hyb)
 
         elif metric_name == "efficiency":
             p = 8  # fixed threads
@@ -222,32 +268,41 @@ def plot_metric_granularity(metric_name, filename, y_label):
             E_seq = S_seq / p
             E_par = S_par / p
             E_hyb = S_hyb / p
-            y_vals = [E_seq, E_par, E_hyb]
+            seq_vals.append(E_seq)
+            par_vals.append(E_par)
+            hyb_vals.append(E_hyb)
 
         elif metric_name == "cost":
             p = 8
             C_seq = 1 * seq_t
             C_par = p * par_t
             C_hyb = p * hyb_t
-            y_vals = [C_seq, C_par, C_hyb]
+            seq_vals.append(C_seq)
+            par_vals.append(C_par)
+            hyb_vals.append(C_hyb)
 
         elif metric_name == "throughput":
             Th_seq = pix / (seq_t * 1e6)
             Th_par = pix / (par_t * 1e6)
             Th_hyb = pix / (hyb_t * 1e6)
-            y_vals = [Th_seq, Th_par, Th_hyb]
+            seq_vals.append(Th_seq)
+            par_vals.append(Th_par)
+            hyb_vals.append(Th_hyb)
 
         else:
             raise ValueError("Unknown metric")
 
-        plt.plot(x, y_vals, marker="o", linewidth=2,
-                 color=colors_gran[idx], label=f"{label} image")
+    plt.figure(figsize=(7, 5))
+    plt.plot(x, seq_vals, marker="o", linewidth=2, color=COLOR_SEQ, label="Sequential")
+    plt.plot(x, par_vals, marker="o", linewidth=2, color=COLOR_PAR, label="Parallel")
+    plt.plot(x, hyb_vals, marker="o", linewidth=2, color=COLOR_HYB, label="Hybrid")
 
-    plt.xticks(x, methods, fontsize=11)
+    plt.xlabel("Granularity (Image Size)", fontsize=12)
     plt.ylabel(y_label, fontsize=12)
-    plt.title(f"{metric_name.capitalize()} vs Method\n(Varying granularity, 8 threads)", fontsize=13)
-    plt.grid(True, axis="y", linestyle="--", alpha=0.6)
-    plt.legend(fontsize=9)
+    plt.title(f"{metric_name.capitalize()} vs Granularity\n(8 threads)", fontsize=13)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.xticks(x, gran_labels)
+    plt.legend(fontsize=10)
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, filename))
     plt.show()
