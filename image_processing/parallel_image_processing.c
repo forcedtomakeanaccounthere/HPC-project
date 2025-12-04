@@ -166,10 +166,16 @@ int main(int argc, char* argv[]) {
     print_processing_info("Multi-level Compression", end_time - start_time);
 
     double total_end_time = get_time();
+    double total_time = total_end_time - total_start_time;
+
     printf("\n=== Performance Summary ===\n");
-    printf("Total processing time: %.4f seconds\n", total_end_time - total_start_time);
+    printf("Total processing time: %.4f seconds\n", total_time);
     printf("Image dimensions: %dx%d = %d pixels\n", 
            original->width, original->height, original->width * original->height);
+
+    // *** Standard result line for parsing in Python/matplotlib ***
+    // format: RESULT,version,label,threads,time
+    printf("RESULT,par,%s,%d,%.6f\n", output_prefix, num_threads, total_time);
 
     free_image(original);
     free_image(grayscale_img);
@@ -489,7 +495,8 @@ void compress_image_multilevel(Image* img, const char* output_prefix, int levels
 }
 
 double get_time() {
-    return (double)clock() / CLOCKS_PER_SEC;
+    // Use OpenMP wall-clock timer (better for parallel)
+    return omp_get_wtime();
 }
 
 void print_processing_info(const char* operation, double time_taken) {

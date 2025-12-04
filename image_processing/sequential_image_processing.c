@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <omp.h>   // for omp_get_wtime()
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -152,11 +153,16 @@ int main(int argc, char* argv[]) {
     print_processing_info("Multi-level Compression", end_time - start_time);
     
     double total_end_time = get_time();
+    double total_time = total_end_time - total_start_time;
     
     printf("\n=== Performance Summary ===\n");
-    printf("Total processing time: %.4f seconds\n", total_end_time - total_start_time);
+    printf("Total processing time: %.4f seconds\n", total_time);
     printf("Image dimensions: %dx%d = %d pixels\n", 
            original->width, original->height, original->width * original->height);
+
+    // *** Standard result line for parsing in Python/matplotlib ***
+    // format: RESULT,version,granularity/label,threads,time
+    printf("RESULT,seq,%s,1,%.6f\n", output_prefix, total_time);
     
     // Cleanup
     free_image(original);
@@ -529,8 +535,8 @@ void compress_image_multilevel(Image* img, const char* output_prefix, int levels
 }
 
 double get_time() {
-    // Simple cross-platform timing using standard C library
-    return (double)clock() / CLOCKS_PER_SEC;
+    // Use wall-clock time so results match parallel version
+    return omp_get_wtime();
 }
 
 void print_processing_info(const char* operation, double time_taken) {
