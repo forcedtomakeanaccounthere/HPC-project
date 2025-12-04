@@ -111,7 +111,7 @@ body {
   border-radius: 4px;
   background: #dee2e6;
   outline: none;
-  -webkit-appearance: none;
+  /* -webkit-appearance: none; */
 }
 
 .intensity-slider::-webkit-slider-thumb {
