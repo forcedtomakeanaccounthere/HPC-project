@@ -193,19 +193,56 @@ function App() {
                 onClick={handleApplyFilter}
                 disabled={processing || !selectedFilter}
               >
-                {processing ? '⏳ Processing...' : '✨ Apply Filter'}
+                {processing ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', animation: 'spin 1s linear infinite'}}>
+                      <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="8"/>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px'}}>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Apply Filter
+                  </>
+                )}
               </button>
               <button 
                 className="reset-button"
                 onClick={handleReset}
               >
-                🔄 Reset
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px'}}>
+                  <polyline points="23 4 23 10 17 10"/>
+                  <polyline points="1 20 1 14 7 14"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                Reset
               </button>
               <button 
                 className="history-button"
                 onClick={() => setShowHistory(!showHistory)}
               >
-                {showHistory ? '📷 Hide' : '📜 Show'} History
+                {showHistory ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px'}}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px'}}>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    Show
+                  </>
+                )} History
               </button>
             </div>
           </div>
