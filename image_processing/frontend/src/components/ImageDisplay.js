@@ -41,7 +41,10 @@ function ImageDisplay({ originalImage, processedImage, processingTime, onDownloa
 
       {processingTime && (
         <div className="performance-badge">
-          ⚡ Processed in {processingTime}ms
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '6px'}}>
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          Processed in {processingTime}ms
           <span className="performance-details">
             {' '}({(processingTime / 1000).toFixed(2)}s)
           </span>
@@ -99,7 +102,13 @@ function ImageDisplay({ originalImage, processedImage, processingTime, onDownloa
                 className="compare-slider"
                 style={{ left: `${sliderPosition}%` }}
               >
-                <div className="slider-handle">↔️</div>
+                <div className="slider-handle">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <polyline points="8 7 3 12 8 17"/>
+                    <polyline points="16 7 21 12 16 17"/>
+                  </svg>
+                </div>
               </div>
               <input
                 type="range"
@@ -121,7 +130,12 @@ function ImageDisplay({ originalImage, processedImage, processingTime, onDownloa
       {processedImage && (
         <div className="action-bar">
           <button className="download-button" onClick={onDownload}>
-            ⬇️ Download Processed Image
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display: 'inline-block', verticalAlign: 'middle', marginRight: '8px'}}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Processed Image
           </button>
         </div>
       )}
